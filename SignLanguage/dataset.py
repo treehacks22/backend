@@ -47,15 +47,16 @@ class SignLanguageMNIST(Dataset):
         return labels, samples
 
     def __init__(self,
-            path: str="data/sign_mnist_train.csv",
-            mean: List[float]=[0.485],
-            std: List[float]=[0.229]):
+                 path: str = "data/sign_mnist_train.csv",
+                 mean: List[float] = [0.485],
+                 std: List[float] = [0.229]):
         """
         Args:
             path: Path to `.csv` file containing `label`, `pixel0`, `pixel1`...
         """
         labels, samples = SignLanguageMNIST.read_label_samples_from_csv(path)
-        self._samples = np.array(samples, dtype=np.uint8).reshape((-1, 28, 28, 1))
+        self._samples = np.array(
+            samples, dtype=np.uint8).reshape((-1, 28, 28, 1))
         self._labels = np.array(labels, dtype=np.uint8).reshape((-1, 1))
 
         self._mean = mean
@@ -76,13 +77,17 @@ class SignLanguageMNIST(Dataset):
             'label': torch.from_numpy(self._labels[idx]).float()
         }
 
+
 def get_train_test_loaders(batch_size=32):
     trainset = SignLanguageMNIST('data/sign_mnist_train.csv')
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True)
+    trainloader = torch.utils.data.DataLoader(
+        trainset, batch_size=batch_size, shuffle=True)
 
     testset = SignLanguageMNIST('data/sign_mnist_test.csv')
-    testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False)
+    testloader = torch.utils.data.DataLoader(
+        testset, batch_size=batch_size, shuffle=False)
     return trainloader, testloader
+
 
 if __name__ == '__main__':
     loader, _ = get_train_test_loaders(2)
