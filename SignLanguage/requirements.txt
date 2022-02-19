@@ -3,6 +3,9 @@ numpy==1.22.2
 onnx==1.11.0
 onnxruntime==1.10.0
 opencv-python==4.5.5.62
+Pillow==9.0.1
 protobuf==3.19.4
-torchvision==0.1.6
+six==1.16.0
+torch==1.10.2
+torchvision==0.11.3
 typing-extensions==4.1.1
