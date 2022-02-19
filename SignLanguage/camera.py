@@ -1,15 +1,8 @@
+import time
 import cv2
 import numpy as np
 import onnxruntime as ort
-
-
-def center_crop(frame):
-    h, w, _ = frame.shape
-    start = abs(h - w) // 2
-    if h > w:
-        return frame[start: start + w]
-    return frame[:, start: start + h]
-
+from imutils.video import VideoStream
 
 def main():
     # constants
@@ -19,16 +12,21 @@ def main():
 
     # create runnable session with exported model
     ort_session = ort.InferenceSession("signlanguage.onnx")
+    vc = VideoStream(src=0).start()
+    time.sleep(2.0)
 
-    cap = cv2.VideoCapture(0)
     while True:
         # Capture frame-by-frame
-        ret, frame = cap.read()
+        frame = vc.read()
 
-        # preprocess data
-        frame = center_crop(frame)
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
-        x = cv2.resize(frame, (28, 28))
+        width = 700
+        height = 480
+        frame = cv2.resize(frame, (width,height))
+
+        img = frame[20:250, 20:250]
+
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        x = cv2.resize(img, (28, 28))
         x = (x - mean) / std
 
         x = x.reshape(1, 1, 28, 28).astype(np.float32)
@@ -36,9 +34,13 @@ def main():
 
         index = np.argmax(y, axis=1)
         letter = index_to_letter[int(index)]
+        window_name = "Sign Language Translator"
 
         cv2.putText(frame, letter, (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 2.0, (0, 255, 0), thickness=2)
-        cv2.imshow("Sign Language Translator", frame)
+        cv2.imshow(window_name, frame)
+
+        image = cv2.rectangle(frame, (20, 20), (250, 250), (0, 255, 0), 3)
+        cv2.imshow(window_name, image)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

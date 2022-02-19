@@ -1,4 +1,5 @@
 flatbuffers==2.0
+imutils==0.5.4
 numpy==1.22.2
 onnx==1.11.0
 onnxruntime==1.10.0
