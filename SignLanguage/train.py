@@ -37,7 +37,7 @@ def main():
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
     trainloader, _ = get_train_test_loaders()
-    for epoch in range(12):  # loop over the dataset multiple times
+    for epoch in range(5):  # loop over the dataset multiple times
         train(net, criterion, optimizer, trainloader, epoch)
         scheduler.step()
     torch.save(net.state_dict(), "checkpoint.pth")

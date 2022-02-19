@@ -22,6 +22,8 @@ logger = logging.getLogger("pc")
 pcs = set()
 relay = MediaRelay()
 
+gameData = {'letter': ''}
+
 
 class VideoTransformTrack(MediaStreamTrack):
     """
@@ -39,48 +41,47 @@ class VideoTransformTrack(MediaStreamTrack):
         self.index_to_letter = list('ABCDEFGHIKLMNOPQRSTUVWXY')
         self.mean = 0.485 * 255.
         self.std = 0.229 * 255.
+        self.timer = 0
 
         # create runnable session with exported model
         self.ort_session = ort.InferenceSession("signlanguage.onnx")
 
     async def recv(self):
         frame = await self.track.recv()       # preprocess data
-        # print(type(frame))
-        # return frame
-
         width = 700
         height = 480
         img = cv2.resize(frame.to_ndarray(format="bgr24"), (width, height))
-        cropImg = img[20:250, 20:250]
 
-        # print("1")
+        if self.timer == 8:
+            cropImg = img[20:250, 20:250]
+            img2 = cv2.cvtColor(cropImg, cv2.COLOR_RGB2GRAY)
 
-        img2 = cv2.cvtColor(cropImg, cv2.COLOR_RGB2GRAY)
-        x = cv2.resize(img2, (28, 28))
-        x = (x - self.mean) / self.std
+            x = cv2.resize(img2, (28, 28))
+            x = (x - self.mean) / self.std
+            x = x.reshape(1, 1, 28, 28).astype(np.float32)
+            y = self.ort_session.run(None, {'input': x})[0]
 
-        # print("2")
+            index = np.argmax(y, axis=1)
+            letter = self.index_to_letter[int(index)]
+            gameData['letter'] = letter
+            print(letter)
 
-        x = x.reshape(1, 1, 28, 28).astype(np.float32)
-        y = self.ort_session.run(None, {'input': x})[0]
+            self.timer = 0
+        else:
+            self.timer = self.timer + 1
 
-        # print("3")
-
-        index = np.argmax(y, axis=1)
-        letter = self.index_to_letter[int(index)]
-        print(letter)
-
-        cv2.putText(img, letter, (100, 100),
+        cv2.putText(img, gameData['letter'], (100, 100),
                     cv2.FONT_HERSHEY_SIMPLEX, 2.0, (0, 255, 0), thickness=2)
         img = cv2.rectangle(img, (20, 20), (250, 250), (0, 255, 0), 3)
 
-        # # rebuild a VideoFrame, preserving timing information
+        # rebuild a VideoFrame, preserving timing information
 
         new_frame = VideoFrame.from_ndarray(img, format="bgr24")
         new_frame.pts = frame.pts
         new_frame.time_base = frame.time_base
+        frame = new_frame
 
-        return new_frame
+        return frame
 
 
 async def index(request):
@@ -119,7 +120,7 @@ async def offer(request):
         @channel.on("message")
         def on_message(message):  # TODO make this return the game data
             if isinstance(message, str) and message.startswith("ping"):
-                channel.send("pong" + message[4:])
+                channel.send("pong" + str(gameData))
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
@@ -131,7 +132,6 @@ async def offer(request):
     @pc.on("track")
     def on_track(track):
         log_info("Track %s received", track.kind)
-
         if track.kind == "audio":
             pc.addTrack(player.audio)
             recorder.addTrack(track)
