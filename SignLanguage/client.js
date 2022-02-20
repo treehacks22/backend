@@ -103,7 +103,8 @@ function negotiate() {
         body: JSON.stringify({
           sdp: offer.sdp,
           type: offer.type,
-          video_transform: document.getElementById('video-transform').value,
+          //   video_transform: document.getElementById('video-transform').value,
+          video_transform: 'none',
           song: 1,
         }),
         headers: {
@@ -139,31 +140,34 @@ function start() {
       return new Date().getTime() - time_start;
     }
   }
-
-  var parameters = JSON.parse(
-    // document.getElementById('datachannel-parameters').value
-    { ordered: true }
-  );
+  var parameters = { ordered: true };
+  //   var parameters = JSON.parse(
+  //     document.getElementById('datachannel-parameters').value
+  //   );
 
   dc = pc.createDataChannel('chat', parameters);
   dc.onclose = function () {
     clearInterval(dcInterval);
     // dataChannelLog.textContent += '- close\n';
+    console.log('- close');
   };
   dc.onopen = function () {
     // dataChannelLog.textContent += '- open\n';
     dcInterval = setInterval(function () {
       var message = 'ping ' + current_stamp();
       //   dataChannelLog.textContent += '> ' + message + '\n';
+      console.log(message);
       dc.send(message);
     }, 1000);
   };
   dc.onmessage = function (evt) {
     // dataChannelLog.textContent += '< ' + evt.data + '\n';
+    console.log(evt.data);
 
     if (evt.data.substring(0, 4) === 'pong') {
       var elapsed_ms = current_stamp() - parseInt(evt.data.substring(5), 10);
       //   dataChannelLog.textContent += ' RTT ' + elapsed_ms + ' ms\n';
+      console.log(' RTT ' + elapsed_ms + ' ms');
     }
   };
 
