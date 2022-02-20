@@ -22,7 +22,7 @@ logger = logging.getLogger("pc")
 pcs = set()
 relay = MediaRelay()
 
-gameData = {'audio': '', 'letter': ''}
+gameData = {'letter': ''}
 
 
 audio_letters = {
@@ -106,6 +106,7 @@ class VideoTransformTrack(MediaStreamTrack):
 
             index = np.argmax(y, axis=1)
             letter = self.index_to_letter[int(index)]
+            gameData['letter'] = letter
             # print(gameData['audio'])
             # channel.send(gameData)
             print(letter)
