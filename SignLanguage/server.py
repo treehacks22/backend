@@ -22,6 +22,8 @@ logger = logging.getLogger("pc")
 pcs = set()
 relay = MediaRelay()
 
+dc = {}
+
 gameData = {'letter': ''}
 
 
@@ -75,10 +77,9 @@ class VideoTransformTrack(MediaStreamTrack):
 
     kind = "video"
 
-    def __init__(self, track, transform):
+    def __init__(self, track):
         super().__init__()  # don't forget this!
         self.track = track
-        self.transform = transform
 
         # constants
         self.index_to_letter = list('ABCDEFGHIKLMNOPQRSTUVWXY')
@@ -95,7 +96,7 @@ class VideoTransformTrack(MediaStreamTrack):
         height = 480
         img = cv2.resize(frame.to_ndarray(format="bgr24"), (width, height))
 
-        if self.timer == 8:
+        if self.timer == 12:
             cropImg = img[20:250, 20:250]
             img2 = cv2.cvtColor(cropImg, cv2.COLOR_RGB2GRAY)
 
@@ -108,7 +109,8 @@ class VideoTransformTrack(MediaStreamTrack):
             letter = self.index_to_letter[int(index)]
             gameData['letter'] = letter
             # print(gameData['audio'])
-            # channel.send(gameData)
+            global dc
+            dc.send(str(gameData))
             print(letter)
 
             self.timer = 0
@@ -165,10 +167,12 @@ async def offer(request):
 
     @pc.on("datachannel")
     def on_datachannel(channel):
-        @channel.on("message")
-        def on_message(message):  # TODO make this return the game data
-            if isinstance(message, str) and message.startswith("ping"):
-                channel.send("pong" + str(gameData))
+        global dc
+        dc = channel
+        # @channel.on("message")
+        # def on_message(message):  # TODO make this return the game data
+        #     if isinstance(message, str) and message.startswith("ping"):
+        #         channel.send("pong" + str(gameData))
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
@@ -190,7 +194,7 @@ async def offer(request):
         elif track.kind == "video":
             pc.addTrack(
                 VideoTransformTrack(
-                    relay.subscribe(track), transform=params["video_transform"]
+                    relay.subscribe(track),
                 )
             )
             if args.record_to:
