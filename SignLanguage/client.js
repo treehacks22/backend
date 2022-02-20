@@ -22,20 +22,20 @@ function createPeerConnection() {
     pc = new RTCPeerConnection(config);
 
     // register some listeners to help debugging
-    pc.addEventListener('icegatheringstatechange', function() {
-        iceGatheringLog.textContent += ' -> ' + pc.iceGatheringState;
-    }, false);
-    iceGatheringLog.textContent = pc.iceGatheringState;
+    // pc.addEventListener('icegatheringstatechange', function() {
+    //     iceGatheringLog.textContent += ' -> ' + pc.iceGatheringState;
+    // }, false);
+    // iceGatheringLog.textContent = pc.iceGatheringState;
 
-    pc.addEventListener('iceconnectionstatechange', function() {
-        iceConnectionLog.textContent += ' -> ' + pc.iceConnectionState;
-    }, false);
-    iceConnectionLog.textContent = pc.iceConnectionState;
+    // pc.addEventListener('iceconnectionstatechange', function() {
+    //     iceConnectionLog.textContent += ' -> ' + pc.iceConnectionState;
+    // }, false);
+    // iceConnectionLog.textContent = pc.iceConnectionState;
 
-    pc.addEventListener('signalingstatechange', function() {
-        signalingLog.textContent += ' -> ' + pc.signalingState;
-    }, false);
-    signalingLog.textContent = pc.signalingState;
+    // pc.addEventListener('signalingstatechange', function() {
+    //     signalingLog.textContent += ' -> ' + pc.signalingState;
+    // }, false);
+    // signalingLog.textContent = pc.signalingState;
 
     // connect audio / video
     pc.addEventListener('track', function(evt) {
@@ -68,24 +68,24 @@ function negotiate() {
         });
     }).then(function() {
         var offer = pc.localDescription;
-        var codec;
+        var codec = 'default';
 
-        codec = document.getElementById('audio-codec').value;
-        if (codec !== 'default') {
-            offer.sdp = sdpFilterCodec('audio', codec, offer.sdp);
-        }
+        // codec = document.getElementById('audio-codec').value;
+        // if (codec !== 'default') {
+        //     offer.sdp = sdpFilterCodec('audio', codec, offer.sdp);
+        // }
 
-        codec = document.getElementById('video-codec').value;
-        if (codec !== 'default') {
-            offer.sdp = sdpFilterCodec('video', codec, offer.sdp);
-        }
+        // codec = document.getElementById('video-codec').value;
+        // if (codec !== 'default') {
+        //     offer.sdp = sdpFilterCodec('video', codec, offer.sdp);
+        // }
 
-        document.getElementById('offer-sdp').textContent = offer.sdp;
+        // document.getElementById('offer-sdp').textContent = offer.sdp;
         return fetch('/offer', {
             body: JSON.stringify({
                 sdp: offer.sdp,
                 type: offer.type,
-                video_transform: document.getElementById('video-transform').value,
+                // video_transform: document.getElementById('video-transform').value,
                 song: 1
             }),
             headers: {
@@ -96,7 +96,7 @@ function negotiate() {
     }).then(function(response) {
         return response.json();
     }).then(function(answer) {
-        document.getElementById('answer-sdp').textContent = answer.sdp;
+        // document.getElementById('answer-sdp').textContent = answer.sdp;
         return pc.setRemoteDescription(answer);
     }).catch(function(e) {
         alert(e);
@@ -119,49 +119,65 @@ function start() {
         }
     }
 
-    if (document.getElementById('use-datachannel').checked) {
-        var parameters = JSON.parse(document.getElementById('datachannel-parameters').value);
-
-        dc = pc.createDataChannel('chat', parameters);
-        dc.onclose = function() {
-            clearInterval(dcInterval);
-            dataChannelLog.textContent += '- close\n';
-        };
-        dc.onopen = function() {
+    dc = pc.createDataChannel('chat', {"ordered": true});
+    dc.onclose = function() {
+        clearInterval(dcInterval);
+        dataChannelLog.textContent += '- close\n';
+    };
+    dc.onopen = function() {
             dataChannelLog.textContent += '- open\n';
             dcInterval = setInterval(function() {
                 var message = 'ping ' + current_stamp();
                 dataChannelLog.textContent += '> ' + message + '\n';
                 dc.send(message);
-            }, 1000);
-        };
-        dc.onmessage = function(evt) {
-            dataChannelLog.textContent += '< ' + evt.data + '\n';
-
-            if (evt.data.substring(0, 4) === 'pong') {
-                var elapsed_ms = current_stamp() - parseInt(evt.data.substring(5), 10);
-                dataChannelLog.textContent += ' RTT ' + elapsed_ms + ' ms\n';
-            }
-        };
+        }, 1000);
     }
+
+    // if (document.getElementById('use-datachannel').checked) {
+    //     var parameters = JSON.parse(document.getElementById('datachannel-parameters').value);
+
+    //     dc = pc.createDataChannel('chat', parameters);
+    //     dc.onclose = function() {
+    //         clearInterval(dcInterval);
+    //         dataChannelLog.textContent += '- close\n';
+    //     };
+    //     dc.onopen = function() {
+    //         dataChannelLog.textContent += '- open\n';
+    //         dcInterval = setInterval(function() {
+    //             var message = 'ping ' + current_stamp();
+    //             dataChannelLog.textContent += '> ' + message + '\n';
+    //             dc.send(message);
+    //         }, 1000);
+    //     };
+    //     dc.onmessage = function(evt) {
+    //         dataChannelLog.textContent += '< ' + evt.data + '\n';
+
+    //         if (evt.data.substring(0, 4) === 'pong') {
+    //             var elapsed_ms = current_stamp() - parseInt(evt.data.substring(5), 10);
+    //             dataChannelLog.textContent += ' RTT ' + elapsed_ms + ' ms\n';
+    //         }
+    //     };
+    // }
 
     var constraints = {
         audio: document.getElementById('use-audio').checked,
         video: false
     };
 
-    if (document.getElementById('use-video').checked) {
-        var resolution = document.getElementById('video-resolution').value;
-        if (resolution) {
-            resolution = resolution.split('x');
-            constraints.video = {
-                width: parseInt(resolution[0], 0),
-                height: parseInt(resolution[1], 0)
-            };
-        } else {
-            constraints.video = true;
-        }
-    }
+    // if (true) {
+    //     var resolution = document.getElementById('video-resolution').value;
+    //     if (resolution) {
+    //         resolution = resolution.split('x');
+    //         constraints.video = {
+    //             width: parseInt(resolution[0], 0),
+    //             height: parseInt(resolution[1], 0)
+    //         };
+    //     } else {
+    //         constraints.video = true;
+    //     }
+    // }
+
+    constraints.video = true;
 
     if (constraints.audio || constraints.video) {
         if (constraints.video) {
@@ -208,6 +224,8 @@ function stop() {
     setTimeout(function() {
         pc.close();
     }, 500);
+
+    document.getElementById('start').style.display = 'inline-block';
 }
 
 function sdpFilterCodec(kind, codec, realSdp) {

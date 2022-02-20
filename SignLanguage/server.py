@@ -15,12 +15,15 @@ import onnxruntime as ort
 
 from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.media import MediaBlackhole, MediaPlayer, MediaRecorder, MediaRelay
+import aiohttp_cors
 
 ROOT = os.path.dirname(__file__)
 
 logger = logging.getLogger("pc")
 pcs = set()
 relay = MediaRelay()
+
+dc = {}
 
 gameData = {'letter': ''}
 
@@ -75,10 +78,9 @@ class VideoTransformTrack(MediaStreamTrack):
 
     kind = "video"
 
-    def __init__(self, track, transform):
+    def __init__(self, track):
         super().__init__()  # don't forget this!
         self.track = track
-        self.transform = transform
 
         # constants
         self.index_to_letter = list('ABCDEFGHIKLMNOPQRSTUVWXY')
@@ -95,7 +97,7 @@ class VideoTransformTrack(MediaStreamTrack):
         height = 480
         img = cv2.resize(frame.to_ndarray(format="bgr24"), (width, height))
 
-        if self.timer == 8:
+        if self.timer == 12:
             cropImg = img[20:250, 20:250]
             img2 = cv2.cvtColor(cropImg, cv2.COLOR_RGB2GRAY)
 
@@ -108,7 +110,8 @@ class VideoTransformTrack(MediaStreamTrack):
             letter = self.index_to_letter[int(index)]
             gameData['letter'] = letter
             # print(gameData['audio'])
-            # channel.send(gameData)
+            global dc
+            dc.send(str(gameData))
             print(letter)
 
             self.timer = 0
@@ -165,10 +168,12 @@ async def offer(request):
 
     @pc.on("datachannel")
     def on_datachannel(channel):
-        @channel.on("message")
-        def on_message(message):  # TODO make this return the game data
-            if isinstance(message, str) and message.startswith("ping"):
-                channel.send("pong" + str(gameData))
+        global dc
+        dc = channel
+        # @channel.on("message")
+        # def on_message(message):  # TODO make this return the game data
+        #     if isinstance(message, str) and message.startswith("ping"):
+        #         channel.send("pong" + str(gameData))
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
@@ -190,7 +195,7 @@ async def offer(request):
         elif track.kind == "video":
             pc.addTrack(
                 VideoTransformTrack(
-                    relay.subscribe(track), transform=params["video_transform"]
+                    relay.subscribe(track),
                 )
             )
             if args.record_to:
@@ -253,9 +258,25 @@ if __name__ == "__main__":
 
     app = web.Application()
     app.on_shutdown.append(on_shutdown)
+
+    def allow_cors(app):
+        cors = aiohttp_cors.setup(app, defaults={
+            "*": aiohttp_cors.ResourceOptions(
+                allow_credentials=True,
+                expose_headers="*",
+                allow_headers="*",
+                allow_methods="*",
+            )
+        })
+        for route in list(app.router.routes()):
+            cors.add(route)
+
     app.router.add_get("/", index)
     app.router.add_get("/client.js", javascript)
     app.router.add_post("/offer", offer)
+
+    allow_cors(app)
+
     web.run_app(
         app, access_log=None, host=args.host, port=args.port, ssl_context=ssl_context
     )
