@@ -4,6 +4,13 @@
 
 `pip install -r requirements.txt`
 
+## How to build model?
+
+`python train.py`
+then `python evaluate.py`
+
+Tune hyperparameters in training/evaluation to change model
+
 ## How to run?
 
 `python server.py --port 8081`
