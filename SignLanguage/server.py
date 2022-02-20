@@ -22,7 +22,8 @@ logger = logging.getLogger("pc")
 pcs = set()
 relay = MediaRelay()
 
-gameData = {'audio': ''}
+gameData = {'audio': '', 'letter': ''}
+
 
 audio_letters = {
     'A': 'A_Guitar.wav',
@@ -31,6 +32,16 @@ audio_letters = {
     'D': 'D_Guitar.wav',
     'E': 'Em_Guitar.wav',
     'F': 'F_Guitar.wav'
+}
+
+
+songs = {
+    1: 'assets/guitar/chord (1).wav',
+    2: 'assets/guitar/chord (2).wav',
+    3: 'assets/guitar/chord (3).wav',
+    4: 'assets/guitar/chord (4).wav',
+    5: 'assets/guitar/chord (5).wav',
+    6: 'assets/guitar/chord (6).wav'
 }
 
 
@@ -95,9 +106,8 @@ class VideoTransformTrack(MediaStreamTrack):
 
             index = np.argmax(y, axis=1)
             letter = self.index_to_letter[int(index)]
-            gameData['audio'] = 'audio/' + audio_letters[letter]
-            print(gameData['audio'])
-            channel.send(gameData)
+            # print(gameData['audio'])
+            # channel.send(gameData)
             print(letter)
 
             self.timer = 0
@@ -141,13 +151,16 @@ async def offer(request):
 
     log_info("Created for %s", request.remote)
 
-    # # prepare local media
-    # # TODO make this the song/sound we want to play
-    # player = MediaPlayer(os.path.join(ROOT, "demo-instruct.wav"))
-    if args.record_to:
-        recorder = MediaRecorder(args.record_to)
-    else:
-        recorder = MediaBlackhole()
+    if not int(params["song"]) == 0:
+        song = songs[int(params["song"])]
+
+        # # prepare local media
+        # # TODO make this the song/sound we want to play
+        player = MediaPlayer(os.path.join(ROOT, song))
+        if args.record_to:
+            recorder = MediaRecorder(args.record_to)
+        else:
+            recorder = MediaBlackhole()
 
     @pc.on("datachannel")
     def on_datachannel(channel):
@@ -171,7 +184,7 @@ async def offer(request):
             # audio = AudioTrack(relay.subscribe(track))
             # pc.addTrack(track)
 
-            # pc.addTrack(player.audio)
+            pc.addTrack(player.audio)
             recorder.addTrack(track)
         elif track.kind == "video":
             pc.addTrack(
