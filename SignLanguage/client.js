@@ -117,7 +117,7 @@ function negotiate() {
       return response.json();
     })
     .then(function (answer) {
-      document.getElementById('answer-sdp').textContent = answer.sdp;
+      //   document.getElementById('answer-sdp').textContent = answer.sdp;
       return pc.setRemoteDescription(answer);
     })
     .catch(function (e) {
