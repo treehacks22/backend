@@ -9,6 +9,7 @@ import uuid
 import cv2
 from aiohttp import web
 from av import VideoFrame
+from flask import Flask
 
 import numpy as np
 import onnxruntime as ort
