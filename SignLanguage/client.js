@@ -99,7 +99,7 @@ function negotiate() {
       // }
 
       // document.getElementById('offer-sdp').textContent = offer.sdp;
-      return fetch('/offer', {
+      return fetch('http://localhost:8081/offer', {
         body: JSON.stringify({
           sdp: offer.sdp,
           type: offer.type,
