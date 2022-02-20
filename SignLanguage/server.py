@@ -22,7 +22,39 @@ logger = logging.getLogger("pc")
 pcs = set()
 relay = MediaRelay()
 
-gameData = {'letter': ''}
+gameData = {'audio': ''}
+
+audio_letters = {
+    'A': 'A_Guitar.wav',
+    'B': 'B_Guitar.wav',
+    'C': 'C_Guitar.wav',
+    'D': 'D_Guitar.wav',
+    'E': 'Em_Guitar.wav',
+    'F': 'F_Guitar.wav'
+}
+
+
+class AudioTrack(MediaStreamTrack):
+
+    kind = "audio"
+
+    def __init__(self, track):
+        super().__init__()
+        self.track = track
+        self.tracks = []
+        self.timer = 0
+
+    async def recv(self):
+        frame = await self.track.recv()       # preprocess data
+        if self.timer == 48:
+            # print("SENDING AUDIO")
+            player = MediaPlayer(os.path.join(
+                ROOT, "assets/guitar/chord (1).wav"))
+            self.timer = 0
+            return player.audio
+        else:
+            self.timer = self.timer + 1
+            return frame
 
 
 class VideoTransformTrack(MediaStreamTrack):
@@ -63,7 +95,9 @@ class VideoTransformTrack(MediaStreamTrack):
 
             index = np.argmax(y, axis=1)
             letter = self.index_to_letter[int(index)]
-            gameData['letter'] = letter
+            gameData['audio'] = 'audio/' + audio_letters[letter]
+            print(gameData['audio'])
+            channel.send(gameData)
             print(letter)
 
             self.timer = 0
@@ -107,9 +141,9 @@ async def offer(request):
 
     log_info("Created for %s", request.remote)
 
-    # prepare local media
-    # TODO make this the song/sound we want to play
-    player = MediaPlayer(os.path.join(ROOT, "demo-instruct.wav"))
+    # # prepare local media
+    # # TODO make this the song/sound we want to play
+    # player = MediaPlayer(os.path.join(ROOT, "demo-instruct.wav"))
     if args.record_to:
         recorder = MediaRecorder(args.record_to)
     else:
@@ -133,7 +167,11 @@ async def offer(request):
     def on_track(track):
         log_info("Track %s received", track.kind)
         if track.kind == "audio":
-            pc.addTrack(player.audio)
+            # pc.addTrack(AudioTrack(relay.subscribe(track)))
+            # audio = AudioTrack(relay.subscribe(track))
+            # pc.addTrack(track)
+
+            # pc.addTrack(player.audio)
             recorder.addTrack(track)
         elif track.kind == "video":
             pc.addTrack(
